@@ -2,22 +2,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Initialize the SQLite database URL (database file will be created automatically)
-DATABASE_URL = 'sqlite:///product_management.db'
+# Create the database engine
+SQLALCHEMY_DATABASE_URL = "sqlite:///./product-management-system.db"
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
-# Create an engine, which connects to the SQLite database
-engine = create_engine(DATABASE_URL)
-
-# Base class for our models (Product, Store, Audit will inherit from this)
-Base = declarative_base()
-
-# Create a configured "Session" class for database transactions
+# Create a configured "SessionLocal" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Dependency function to get the session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Create the Base class from which all ORM models will inherit
+Base = declarative_base()

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from db.setup import Base
+from db.setup import Base  # Import Base from your setup file
 
 class Store(Base):
     __tablename__ = 'stores'

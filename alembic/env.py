@@ -1,7 +1,12 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-from db.setup import Base  # Update if needed
+from db.setup import Base
+
+# Import all models here to ensure they are included in the migration process
+from models.store import Store  # Ensure the Store model is imported
+from models.product import Product  # Ensure the Product model is imported
+from models.audit import Audit  # Ensure the Audit model is imported
 
 # Alembic Config object
 config = context.config
