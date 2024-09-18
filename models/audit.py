@@ -11,7 +11,7 @@ class Audit(Base):
     audit_date = Column(String)
 
     # Relationship to Product
-    product = relationship('Product', back_populates='audits')
+    product = relationship('Product', back_populates='audits')  # Ensure this matches
 
     def __repr__(self):
         return f"<Audit(product_name={self.product_name}, audit_date={self.audit_date})>"
