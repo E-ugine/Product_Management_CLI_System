@@ -14,19 +14,22 @@ def cli():
     """Product Management System CLI"""
     pass
 
-# Command to add a product
+# Command to add a product or update quantity if it already exists
 @click.command()
 @click.option('--name', prompt='Product Name', help='The name of the product.')
 @click.option('--price', prompt='Product Price', type=int, help='The price of the product.')
 @click.option('--store_id', prompt='Store ID', type=int, help='The ID of the store.')
-@click.option('--product_quantity', prompt='product quantity', type=int, help='The quantity of the product.')
-def add_product(name, price, store_id,product_quantity):
-    """Add a new product"""
+@click.option('--quantity', default=1, help='The quantity of the product (default: 1).')
+def add_product(name, price, store_id, quantity):
+    """Add a new product or update quantity if it already exists"""
     try:
         if price < 0:
             raise ValueError("Price cannot be negative.")
-        product = Product.create(session, name, price, store_id,product_quantity)
-        click.echo(f'Product "{product.name}" added successfully!')
+        if quantity < 1:
+            raise ValueError("Quantity must be at least 1.")
+        
+        product = Product.create(session, name, price, store_id, quantity)
+        click.echo(f'Product "{product.name}" added or updated successfully with quantity {product.quantity}!')
     except ValueError as e:
         click.echo(f'Error: {e}')
     except IntegrityError:
@@ -36,11 +39,11 @@ def add_product(name, price, store_id,product_quantity):
 # Command to list all products
 @click.command()
 def list_products():
-    """List all products"""
+    """List all products with their quantities"""
     products = Product.get_all(session)
     if products:
         for product in products:
-            click.echo(f'ID: {product.id}, Name: {product.name}, Quantity: {product.quantity} Price: {product.price}')
+            click.echo(f'ID: {product.id}, Name: {product.name}, Price: {product.price}, Quantity: {product.quantity}')
     else:
         click.echo("No products found.")
 
