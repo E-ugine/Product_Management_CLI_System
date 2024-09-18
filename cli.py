@@ -4,6 +4,7 @@ from db.setup import engine
 from models.product import Product
 from models.store import Store
 from models.audit import Audit
+from sqlalchemy.exc import IntegrityError
 
 session = Session(bind=engine)
 
@@ -18,8 +19,18 @@ def cli():
 @click.option('--store_id', prompt='Store ID', help='The ID of the store.')
 def add_product(name, price, store_id):
     """Add a new product"""
-    product = Product.create(session, name, price, store_id)
-    click.echo(f'Product {product.name} added successfully!')
+    try:
+        price = int(price)
+        if price < 0:
+            raise ValueError("Price cannot be negative.")
+        
+        product = Product.create(session, name, price, store_id)
+        click.echo(f'Product {name} added successfully!')
+    except ValueError as e:
+        click.echo(f'Error: {e}')  # Show error if the price is negative or any other issue
+    except IntegrityError:
+        session.rollback()
+        click.echo('Error: Store ID does not exist.')
 
 @click.command()
 def list_products():
@@ -27,8 +38,6 @@ def list_products():
     products = Product.get_all(session)
     for product in products:
         click.echo(f'ID: {product.id}, Name: {product.name}, Price: {product.price}')
-
-        
 
 @click.command()
 @click.option('--product_id', prompt='Product ID', help='The ID of the product to delete.')
@@ -51,14 +60,13 @@ def update_product(product_id, name, price):
     product = session.query(Product).get(product_id)
     if product:
         product.name = name
-        product.price = price
+        product.price = int(price)
         session.commit()
         click.echo(f'Product {name} updated successfully!')
     else:
         click.echo(f'Product with ID {product_id} not found.')
 
 cli.add_command(update_product)
-
 
 @click.command()
 @click.option('--name', prompt='Store Name', help='The name of the store.')
@@ -87,7 +95,6 @@ def delete_store(store_id):
 
 cli.add_command(delete_store)
 
-
 @click.command()
 @click.option('--product_id', prompt='Product ID', help='The ID of the product being audited.')
 @click.option('--audit_date', prompt='Audit Date', help='The date of the audit (e.g., 2024-09-18).')
@@ -105,7 +112,24 @@ def add_audit(product_id, audit_date):
 
 cli.add_command(add_audit)
 
+@click.command()
+def sync_audits():
+    """Synchronize product names across audits"""
+    products = session.query(Product).all()
 
+    for product in products:
+        # Find all audits related to the product
+        audits = session.query(Audit).filter_by(product_id=product.id).all()
+
+        # Update the audit records with the latest product name
+        for audit in audits:
+            audit.product_name = product.name  # Sync product name
+        session.commit()
+
+    click.echo('Product names synchronized across audits successfully!')
+
+# Add the command to the CLI group
+cli.add_command(sync_audits)
 
 if __name__ == '__main__':
     cli()
