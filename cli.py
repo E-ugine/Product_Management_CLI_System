@@ -40,5 +40,18 @@ cli.add_command(add_product)
 cli.add_command(list_products)
 cli.add_command(delete_product)
 
+@click.command()
+@click.option('--name', prompt='Store Name', help='The name of the store.')
+@click.option('--location', prompt='Store Location', help='The location of the store.')
+def add_store(name, location):
+    """Add a new store"""
+    store = Store(name=name, location=location)
+    session.add(store)
+    session.commit()
+    click.echo(f'Store {name} added successfully!')
+
+cli.add_command(add_store)
+
+
 if __name__ == '__main__':
     cli()
