@@ -1,13 +1,15 @@
 import click
 from sqlalchemy.orm import Session
 from db.setup import engine
-from models import Product, Store, Audit
+from models.product import Product
+from models.store import Store
+from models.audit import Audit
 
 session = Session(bind=engine)
 
 @click.group()
 def cli():
-    """A simple CLI for Product Management System"""
+    """Product Management System CLI"""
     pass
 
 @click.command()
@@ -16,24 +18,27 @@ def cli():
 @click.option('--store_id', prompt='Store ID', help='The ID of the store.')
 def add_product(name, price, store_id):
     """Add a new product"""
-    product = Product(name=name, price=price, store_id=store_id)
-    session.add(product)
-    session.commit()
-    click.echo(f'Product {name} added successfully!')
+    product = Product.create(session, name, price, store_id)
+    click.echo(f'Product {product.name} added successfully!')
 
 @click.command()
-def sync_audits():
-    """Synchronize product names across audits"""
-    products = session.query(Product).all()
+def list_products():
+    """List all products"""
+    products = Product.get_all(session)
     for product in products:
-        if product.audits:
-            for audit in product.audits:
-                audit.product_name = product.name
-    session.commit()
-    click.echo('Product names synchronized across audits.')
+        click.echo(f'ID: {product.id}, Name: {product.name}, Price: {product.price}')
 
+@click.command()
+@click.option('--product_id', prompt='Product ID', help='The ID of the product to delete.')
+def delete_product(product_id):
+    """Delete a product"""
+    Product.delete(session, product_id)
+    click.echo(f'Product with ID {product_id} deleted successfully!')
+
+# Adding commands to the CLI group
 cli.add_command(add_product)
-cli.add_command(sync_audits)
+cli.add_command(list_products)
+cli.add_command(delete_product)
 
 if __name__ == '__main__':
     cli()
