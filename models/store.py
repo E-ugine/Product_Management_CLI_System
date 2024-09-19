@@ -9,16 +9,15 @@ class Store(Base):
     name = Column(String, nullable=False)
     location = Column(String)
 
-    # One-to-many relationship with Product, enabling cascade deletion
+    
     products = relationship('Product', back_populates='store', cascade='all, delete')
 
     def __repr__(self):
         return f"<Store(name={self.name}, location={self.location})>"
 
-    # Static CRUD methods
+   
     @staticmethod
-    def create(session, name, location):
-        """Create a new store and commit it to the database."""
+    def create(session, name, location): # this method creates a new store and persists it to the database
         store = Store(name=name, location=location)
         session.add(store)
         session.commit()
@@ -26,17 +25,14 @@ class Store(Base):
 
     @staticmethod
     def get_all(session):
-        """Retrieve all stores."""
         return session.query(Store).all()
 
     @staticmethod
     def find_by_id(session, store_id):
-        """Find a store by its ID."""
         return session.query(Store).filter_by(id=store_id).first()
 
     @staticmethod
-    def delete(session, store_id):
-        """Delete a store by its ID, and cascade delete associated products."""
+    def delete(session, store_id): # this method enables deletion of a store by its ID, and cascade delete associated products
         store = session.query(Store).filter_by(id=store_id).first()
         if store:
             session.delete(store)

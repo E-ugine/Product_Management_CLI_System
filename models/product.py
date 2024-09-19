@@ -6,10 +6,10 @@ from sqlalchemy.exc import IntegrityError
 class Product(Base):
     __tablename__ = 'products'
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)  # Ensuring unique names for merging
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False, unique=True)  # names must be unique to avoid duplicates
     price = Column(Integer, nullable=False)
-    quantity = Column(Integer, default=1)  # New quantity field to track product count
+    quantity = Column(Integer) 
     store_id = Column(Integer, ForeignKey('stores.id'))
 
     store = relationship('Store', back_populates='products')
@@ -18,27 +18,23 @@ class Product(Base):
     def __repr__(self):
         return f"<Product(name={self.name}, price={self.price}, quantity={self.quantity})>"
 
-    # Static method to create or update the quantity of a product
+    
     @staticmethod
-    def create(session, name, price, store_id, quantity=1):
-        try:
-            # Check if the product already exists
-            existing_product = session.query(Product).filter_by(name=name).first()
-
-            if existing_product:
-                # Update the quantity of the existing product
-                existing_product.quantity += quantity
+    def create(session, name, price, store_id, quantity=1): #this method allows create functionality
+        try:          
+            existing_product = session.query(Product).filter_by(name=name).first() # To avoid duplicates,check if the product already exists
+            if existing_product:             
+                existing_product.quantity += quantity  #  if the product exists , we add its  quantity by the number of products added
                 session.commit()
                 return existing_product
-            else:
-                # Create a new product
+            else:     #if the product does not exist then we can create a new product and persist to the database      
                 product = Product(name=name, price=price, store_id=store_id, quantity=quantity)
                 session.add(product)
                 session.commit()
                 return product
-        except IntegrityError:
+        except IntegrityError: # looks at any integrity error violations. for instance 
             session.rollback()
-            raise ValueError("A product with this name already exists or another integrity constraint violated.")
+            raise ValueError("A product with this name already exists.")
 
     @staticmethod
     def get_all(session):
@@ -55,7 +51,7 @@ class Product(Base):
             session.delete(product)
             session.commit()
 
-    @property
+    @property #ensures that price is valid by only accepting positive inputs for prices
     def valid_price(self):
         if self.price < 0:
             raise ValueError("Price cannot be negative!")

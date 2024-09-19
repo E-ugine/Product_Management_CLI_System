@@ -7,178 +7,173 @@ from models.store import Store
 from models.audit import Audit
 from tabulate import tabulate
 import sqlite3
-# Create a session with the database
+
+
 session = Session(bind=engine)
 
-@click.group()
-def cli():
-    """Product Management System CLI"""
-    pass
+def display_menu(): #Displays the  menu of commands
+    menu = [
+        "1. Add a product",
+        "2. List all products",
+        "3. Delete a product",
+        "4. Update a product",
+        "5. Add a store",
+        "6. Delete a store",
+        "7. Add an audit",
+        "8. List all audits",
+        "9. Synchronize audit product names",
+        "0. Exit"
+    ]
+    print("\n".join(menu))
 
-# Command to add a product or update quantity if it already exists
-@click.command()
-@click.option('--name', prompt='Product Name', help='The name of the product.')
-@click.option('--price', prompt='Product Price', type=int, help='The price of the product.')
-@click.option('--store_id', prompt='Store ID', type=int, help='The ID of the store.')
-@click.option('--quantity', default=1, help='The quantity of the product (default: 1).')
-def add_product(name, price, store_id, quantity):
+
+def get_user_choice(): #Gets the user's choice and ensure it's a valid number.
+    try:
+        choice = int(input("Enter the number of the command you want to run: "))
+        return choice
+    except ValueError:
+        print("Invalid input. Please enter a valid number.")
+        return None
+
+def add_product():
     """Add a new product or update quantity if it already exists"""
     try:
+        name = input("Enter Product Name: ")
+        price = int(input("Enter Product Price: "))
+        store_id = int(input("Enter Store ID: "))
+        quantity = int(input("Enter Quantity: "))
+
         if price < 0:
             raise ValueError("Price cannot be negative.")
         if quantity < 1:
             raise ValueError("Quantity must be at least 1.")
-        
+
         product = Product.create(session, name, price, store_id, quantity)
-        click.echo(f'Product "{product.name}" added or updated successfully with quantity {product.quantity}!')
+        print(f'Product "{product.name}" added or updated successfully with quantity {product.quantity}!')
     except ValueError as e:
-        click.echo(f'Error: {e}')
+        print(f'Error: {e}')
     except IntegrityError:
         session.rollback()
-        click.echo('Error: Store ID does not exist.')
+        print('Error: Store ID does not exist.')
 
-# Command to list all products
-@click.command()
-def list_products():
-    """List all products in tabular form."""
+def list_products(): #"""Lists all products in tabular form
     products = Product.get_all(session)
-    
-    # Check if there are products to display
     if products:
-        # Prepare data for tabulate
         product_data = [
             [product.id, product.name, product.quantity, product.price]
             for product in products
         ]
-        
-        # Define headers for the table
         headers = ["ID", "Name", "Quantity", "Price"]
-        
-        # Print the products in table format using tabulate
         print(tabulate(product_data, headers=headers, tablefmt='grid'))
     else:
-        click.echo("No products found.")
+        print("No products found.")
 
-
-# Command to delete a product by ID
-@click.command()
-@click.option('--product_id', prompt='Product ID', type=int, help='The ID of the product to delete.')
-def delete_product(product_id):
+def delete_product():
     """Delete a product by ID"""
+    product_id = int(input("Enter the Product ID to delete: "))
     product = Product.find_by_id(session, product_id)
     if product:
         Product.delete(session, product_id)
-        click.echo(f'Product with ID {product_id} deleted successfully!')
+        print(f'Product with ID {product_id} deleted successfully!')
     else:
-        click.echo(f'Product with ID {product_id} not found.')
+        print(f'Product with ID {product_id} not found.')
 
-# Command to update an existing product
-@click.command()
-@click.option('--product_id', prompt='Product ID', type=int, help='The ID of the product to update.')
-@click.option('--name', prompt='New Product Name', help='The new name of the product.')
-@click.option('--price', prompt='New Product Price', type=int, help='The new price of the product.')
-def update_product(product_id, name, price):
-    """Update an existing product"""
+def update_product():
     try:
+        product_id = int(input("Enter Product ID to update: "))
+        name = input("Enter New Product Name: ")
+        price = int(input("Enter New Product Price: "))
+        
         product = Product.find_by_id(session, product_id)
         if product:
             product.name = name
             product.price = price
             session.commit()
-            click.echo(f'Product "{name}" updated successfully!')
+            print(f'Product "{name}" updated successfully!')
         else:
-            click.echo(f'Product with ID {product_id} not found.')
+            print(f'Product with ID {product_id} not found.')
     except ValueError as e:
-        click.echo(f'Error: {e}')
+        print(f'Error: {e}')
 
-# Command to add a store
-@click.command()
-@click.option('--name', prompt='Store Name', help='The name of the store.')
-@click.option('--location', prompt='Store Location', help='The location of the store.')
-def add_store(name, location):
-    """Add a new store"""
+def add_store():
+    name = input("Enter Store Name: ")
+    location = input("Enter Store Location: ")
     store = Store(name=name, location=location)
     session.add(store)
     session.commit()
-    click.echo(f'Store "{name}" added successfully!')
+    print(f'Store "{name}" added successfully!')
 
-# Command to delete a store by ID
-@click.command()
-@click.option('--store_id', prompt='Store ID', type=int, help='The ID of the store to delete.')
-def delete_store(store_id):
-    """Delete a store by ID along with all related products"""
+def delete_store(): #Deletes a store by id along with all its  related products
+    store_id = int(input("Enter Store ID to delete: "))
     store = Store.find_by_id(session, store_id)
     if store:
         session.delete(store)
         session.commit()
-        click.echo(f'Store "{store.name}" and its associated products deleted successfully!')
+        print(f'Store "{store.name}" and its associated products deleted successfully!')
     else:
-        click.echo(f'Store with ID {store_id} not found.')
+        print(f'Store with ID {store_id} not found.')
 
-# Command to add an audit for a product
-@click.command()
-@click.option('--product_id', prompt='Product ID', type=int, help='The ID of the product being audited.')
-@click.option('--audit_date', prompt='Audit Date', help='The date of the audit (e.g., 2024-09-18).')
-def add_audit(product_id, audit_date):
-    """Add a new audit for a product"""
+def add_audit():
+    product_id = int(input("Enter Product ID for audit: "))
+    audit_date = input("Enter Audit Date (e.g., 2024-09-18): ")
     product = Product.find_by_id(session, product_id)
     if product:
         audit = Audit.create(session, product_id=product.id, product_name=product.name, audit_date=audit_date)
-        click.echo(f'Audit for product "{product.name}" added successfully!')
+        print(f'Audit for product "{product.name}" added successfully!')
     else:
-        click.echo(f'Product with ID {product_id} not found.')
+        print(f'Product with ID {product_id} not found.')
 
-# Command to list all audits
-@click.command()
 def list_audits():
-    """List all audits"""
     audits = Audit.get_all(session)
+    
     if audits:
-        for audit in audits:
-            click.echo(f'Product: {audit.product_name}, Audit Date: {audit.audit_date}')
+        audit_data = [
+            [audit.id, audit.product_name, audit.audit_date]
+            for audit in audits
+        ]
+        headers = ["Audit ID", "Product Name", "Audit Date"]
+        print(tabulate(audit_data, headers=headers, tablefmt='grid'))
     else:
-        click.echo("No audits found.")
+        print("No audits found.")
 
-# Command to synchronize product names across audits
-@click.command()
-def sync_audits():
-    """Synchronize product names across all audits"""
+def sync_audits(): #Synchronize product names for  all audits"""
     products = Product.get_all(session)
     for product in products:
         audits = session.query(Audit).filter_by(product_id=product.id).all()
         for audit in audits:
             audit.product_name = product.name
         session.commit()
-    click.echo("Product names synchronized across all audits successfully!")
+    print("Product names synchronized across all audits successfully!")
 
-    
+def main():
+    """Main function to run the menu and handle user input"""
+    while True:
+        display_menu()
+        choice = get_user_choice()
 
-# Register all commands to the CLI group
-cli.add_command(add_product)
-cli.add_command(list_products)
-cli.add_command(delete_product)
-cli.add_command(update_product)
-cli.add_command(add_store)
-cli.add_command(delete_store)
-cli.add_command(add_audit)
-cli.add_command(list_audits)
-cli.add_command(sync_audits)
-
-def list_products():
-    conn = sqlite3.connect('product_management_system.db')
-    cursor = conn.cursor()
-    
-    # Execute a query to get all products
-    cursor.execute("SELECT id, name, quantity, price FROM products")
-    products = cursor.fetchall()
-    
-    # Define headers for the table
-    headers = ["ID", "Name", "Quantity", "Price"]
-    
-    # Print the products in table format
-    print(tabulate(products, headers=headers, tablefmt='grid'))
-    
-    conn.close() 
+        if choice == 1:
+            add_product()
+        elif choice == 2:
+            list_products()
+        elif choice == 3:
+            delete_product()
+        elif choice == 4:
+            update_product()
+        elif choice == 5:
+            add_store()
+        elif choice == 6:
+            delete_store()
+        elif choice == 7:
+            add_audit()
+        elif choice == 8:
+            list_audits()
+        elif choice == 9:
+            sync_audits()
+        elif choice == 0:
+            print("Exiting the system. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
 
 if __name__ == '__main__':
-    cli()
+    main()

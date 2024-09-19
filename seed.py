@@ -6,24 +6,22 @@ from models.audit import Audit
 from models.store import Store
 import random
 
-# Create an engine and bind the session
 engine = create_engine('sqlite:///product-management-system.db')
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Create a Faker instance
-fake = Faker()
+fake = Faker() 
 
-# Define the number of records you want to generate
+#this describes the number of records to be generated for each model
 NUM_PRODUCTS = 10
 NUM_STORES = 10
 NUM_AUDITS = 10
 
-# Define a list of car brands and models
+
+#These are the brands of cars to be populated
 car_brands = ['Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'BMW', 'Mercedes', 'Audi', 'Volkswagen', 'Hyundai']
 car_models = ['Camry', 'Civic', 'Mustang', 'Malibu', 'Altima', '3 Series', 'E-Class', 'A4', 'Golf', 'Elantra']
 
-# Generate car names by combining car brands and models
 def generate_car_name(existing_names):
     while True:
         brand = random.choice(car_brands)
@@ -39,7 +37,6 @@ session.query(Store).delete()
 session.query(Audit).delete()
 session.commit()
 
-# Generate fake stores
 stores = []
 for _ in range(NUM_STORES):
     store = Store(
@@ -51,10 +48,8 @@ for _ in range(NUM_STORES):
 session.add_all(stores)
 session.commit()
 
-# Track existing product names
-existing_product_names = set()
+existing_product_names = set() # Track existing product names
 
-# Generate fake products with unique names
 products = []
 for _ in range(NUM_PRODUCTS):
     product = Product(
@@ -68,12 +63,11 @@ for _ in range(NUM_PRODUCTS):
 session.add_all(products)
 session.commit()
 
-# Generate fake audits
 audits = []
 for _ in range(NUM_AUDITS):
     audit = Audit(
         product_id=fake.random_int(min=1, max=NUM_PRODUCTS),
-        product_name=fake.word(),  # If you want to keep the product_name as a fake word
+        product_name=fake.word(),  
         audit_date=fake.date_time_this_year()
     )
     audits.append(audit)
@@ -81,4 +75,4 @@ for _ in range(NUM_AUDITS):
 session.add_all(audits)
 session.commit()
 
-print("Fake data has been generated and added to the database.")
+print("Successfully created.")
