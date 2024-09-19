@@ -5,7 +5,8 @@ from db.setup import engine
 from models.product import Product
 from models.store import Store
 from models.audit import Audit
-
+from tabulate import tabulate
+import sqlite3
 # Create a session with the database
 session = Session(bind=engine)
 
@@ -39,13 +40,25 @@ def add_product(name, price, store_id, quantity):
 # Command to list all products
 @click.command()
 def list_products():
-    """List all products with their quantities"""
+    """List all products in tabular form."""
     products = Product.get_all(session)
+    
+    # Check if there are products to display
     if products:
-        for product in products:
-            click.echo(f'ID: {product.id}, Name: {product.name}, Price: {product.price}, Quantity: {product.quantity}')
+        # Prepare data for tabulate
+        product_data = [
+            [product.id, product.name, product.quantity, product.price]
+            for product in products
+        ]
+        
+        # Define headers for the table
+        headers = ["ID", "Name", "Quantity", "Price"]
+        
+        # Print the products in table format using tabulate
+        print(tabulate(product_data, headers=headers, tablefmt='grid'))
     else:
         click.echo("No products found.")
+
 
 # Command to delete a product by ID
 @click.command()
@@ -138,6 +151,8 @@ def sync_audits():
         session.commit()
     click.echo("Product names synchronized across all audits successfully!")
 
+    
+
 # Register all commands to the CLI group
 cli.add_command(add_product)
 cli.add_command(list_products)
@@ -148,6 +163,22 @@ cli.add_command(delete_store)
 cli.add_command(add_audit)
 cli.add_command(list_audits)
 cli.add_command(sync_audits)
+
+def list_products():
+    conn = sqlite3.connect('product_management_system.db')
+    cursor = conn.cursor()
+    
+    # Execute a query to get all products
+    cursor.execute("SELECT id, name, quantity, price FROM products")
+    products = cursor.fetchall()
+    
+    # Define headers for the table
+    headers = ["ID", "Name", "Quantity", "Price"]
+    
+    # Print the products in table format
+    print(tabulate(products, headers=headers, tablefmt='grid'))
+    
+    conn.close() 
 
 if __name__ == '__main__':
     cli()
