@@ -9,9 +9,11 @@ from tabulate import tabulate
 import sqlite3
 
 
+# Create a session for database operations
 session = Session(bind=engine)
 
-def display_menu(): #Displays the  menu of commands
+def display_menu():
+    """Displays the menu of available commands"""
     menu = [
         "1. Add a product",
         "2. List all products",
@@ -27,7 +29,8 @@ def display_menu(): #Displays the  menu of commands
     print("\n".join(menu))
 
 
-def get_user_choice(): #Gets the user's choice and ensure it's a valid number.
+def get_user_choice():
+    """Gets the user's choice and ensures it's a valid number"""
     try:
         choice = int(input("Enter the number of the command you want to run: "))
         return choice
@@ -36,7 +39,7 @@ def get_user_choice(): #Gets the user's choice and ensure it's a valid number.
         return None
 
 def add_product():
-    """Add a new product or update quantity if it already exists"""
+    """Add a new product or update its quantity if it already exists"""
     try:
         name = input("Enter Product Name: ")
         price = int(input("Enter Product Price: "))
@@ -56,7 +59,8 @@ def add_product():
         session.rollback()
         print('Error: Store ID does not exist.')
 
-def list_products(): #"""Lists all products in tabular form
+def list_products():
+    """Lists all products in tabular form"""
     products = Product.get_all(session)
     if products:
         product_data = [
@@ -70,20 +74,24 @@ def list_products(): #"""Lists all products in tabular form
 
 def delete_product():
     """Delete a product by ID"""
-    product_id = int(input("Enter the Product ID to delete: "))
-    product = Product.find_by_id(session, product_id)
-    if product:
-        Product.delete(session, product_id)
-        print(f'Product with ID {product_id} deleted successfully!')
-    else:
-        print(f'Product with ID {product_id} not found.')
+    try:
+        product_id = int(input("Enter the Product ID to delete: "))
+        product = Product.find_by_id(session, product_id)
+        if product:
+            Product.delete(session, product_id)
+            print(f'Product with ID {product_id} deleted successfully!')
+        else:
+            print(f'Product with ID {product_id} not found.')
+    except ValueError:
+        print("Invalid Product ID.")
 
 def update_product():
+    """Update an existing product by ID"""
     try:
         product_id = int(input("Enter Product ID to update: "))
         name = input("Enter New Product Name: ")
         price = int(input("Enter New Product Price: "))
-        
+
         product = Product.find_by_id(session, product_id)
         if product:
             product.name = name
@@ -96,6 +104,7 @@ def update_product():
         print(f'Error: {e}')
 
 def add_store():
+    """Add a new store"""
     name = input("Enter Store Name: ")
     location = input("Enter Store Location: ")
     store = Store(name=name, location=location)
@@ -103,29 +112,37 @@ def add_store():
     session.commit()
     print(f'Store "{name}" added successfully!')
 
-def delete_store(): #Deletes a store by id along with all its  related products
-    store_id = int(input("Enter Store ID to delete: "))
-    store = Store.find_by_id(session, store_id)
-    if store:
-        session.delete(store)
-        session.commit()
-        print(f'Store "{store.name}" and its associated products deleted successfully!')
-    else:
-        print(f'Store with ID {store_id} not found.')
+def delete_store():
+    """Delete a store by ID, along with all its related products"""
+    try:
+        store_id = int(input("Enter Store ID to delete: "))
+        store = Store.find_by_id(session, store_id)
+        if store:
+            session.delete(store)
+            session.commit()
+            print(f'Store "{store.name}" and its associated products deleted successfully!')
+        else:
+            print(f'Store with ID {store_id} not found.')
+    except ValueError:
+        print("Invalid Store ID.")
 
 def add_audit():
-    product_id = int(input("Enter Product ID for audit: "))
-    audit_date = input("Enter Audit Date (e.g., 2024-09-18): ")
-    product = Product.find_by_id(session, product_id)
-    if product:
-        audit = Audit.create(session, product_id=product.id, product_name=product.name, audit_date=audit_date)
-        print(f'Audit for product "{product.name}" added successfully!')
-    else:
-        print(f'Product with ID {product_id} not found.')
+    """Add an audit for a product"""
+    try:
+        product_id = int(input("Enter Product ID for audit: "))
+        audit_date = input("Enter Audit Date (e.g., 2024-09-18): ")
+        product = Product.find_by_id(session, product_id)
+        if product:
+            audit = Audit.create(session, product_id=product.id, product_name=product.name, audit_date=audit_date)
+            print(f'Audit for product "{product.name}" added successfully!')
+        else:
+            print(f'Product with ID {product_id} not found.')
+    except ValueError:
+        print("Invalid Product ID or Audit Date.")
 
 def list_audits():
+    """Lists all audits in tabular form"""
     audits = Audit.get_all(session)
-    
     if audits:
         audit_data = [
             [audit.id, audit.product_name, audit.audit_date]
@@ -136,7 +153,8 @@ def list_audits():
     else:
         print("No audits found.")
 
-def sync_audits(): #Synchronize product names for  all audits"""
+def sync_audits():
+    """Synchronize product names for all audits"""
     products = Product.get_all(session)
     for product in products:
         audits = session.query(Audit).filter_by(product_id=product.id).all()
