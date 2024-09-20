@@ -3,7 +3,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from db.setup import Base
 
-# Import models to ensure Alembic detects them
+
 from models.store import Store
 from models.product import Product
 from models.audit import Audit
