@@ -54,7 +54,7 @@ products = []
 for _ in range(NUM_PRODUCTS):
     product = Product(
         name=generate_car_name(existing_product_names),
-        price=fake.random_number(digits=8),
+        price=fake.random_number(digits=5),
         quantity=fake.random_number(digits=1),
         store_id=fake.random_int(min=1, max=NUM_STORES)
     )
